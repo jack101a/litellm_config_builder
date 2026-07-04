@@ -224,14 +224,24 @@ function renderProviderPlanners() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
             Generated Variables
           </h4>
-          <pre class="code small generated-envs" id="envs-${providerId}" style="margin: 0; padding: 14px; min-height: 84px; max-height: 124px; overflow-y: auto; background: #0f172a; color: #a5b4fc; border-radius: 8px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.4); font-size: 13px; line-height: 1.6;">${plan.envNames.join('\n')}</pre>
+          <pre class="code small generated-envs" id="envs-${providerId}" style="margin: 0; padding: 14px; min-height: 120px; max-height: 160px; overflow-y: auto; background: #0f172a; color: #a5b4fc; border-radius: 8px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.4); font-size: 13px; line-height: 1.6;">${plan.envNames.join('\n')}</pre>
         </div>
-        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
-          <h4 style="margin: 0 0 16px 0; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            Live Testing Keys
-          </h4>
-          <textarea class="textarea pasted-keys-input" data-provider="${providerId}" rows="3" placeholder="Paste real keys here for live smoke tests (one per line). These are NEVER saved to file." style="margin: 0; width: 100%; font-size: 13px; padding: 14px; border-radius: 8px; border: 1px solid var(--line); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); resize: none;">${plan.pastedKeys.join('\n')}</textarea>
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h4 style="margin: 0; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              Live Testing Keys
+            </h4>
+            <select class="key-paste-mode" style="width: auto; padding: 4px 8px; font-size: 11px; border-radius: 6px; border: 1px solid var(--line); background: white; cursor: pointer;">
+              <option value="bulk">Bulk Paste</option>
+              <option value="individual">Individual Fields</option>
+            </select>
+          </div>
+          <div class="paste-bulk-container" style="flex: 1; display: flex; flex-direction: column;">
+            <textarea class="textarea pasted-keys-input" data-provider="${providerId}" rows="5" placeholder="Paste real keys here for live smoke tests (one per line). These are NEVER saved to file." style="margin: 0; width: 100%; flex: 1; font-size: 13px; padding: 14px; border-radius: 8px; border: 1px solid var(--line); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); resize: vertical; min-height: 120px;">${plan.pastedKeys.join('\n')}</textarea>
+          </div>
+          <div class="paste-individual-container" style="display: none; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; max-height: 160px; padding-right: 4px;">
+          </div>
         </div>
       </div>
     `;
@@ -246,11 +256,50 @@ function renderProviderPlanners() {
       plannerBlock.style.boxShadow = 'var(--shadow-md)';
     });
 
-    // Live update env names on changes
     const countInput = plannerBlock.querySelector('.key-count-input');
     const prefixInput = plannerBlock.querySelector('.env-prefix-input');
     const pastedInput = plannerBlock.querySelector('.pasted-keys-input');
-    const envsPre = plannerBlock.querySelector(`.generated-envs`);
+    const envsPre = plannerBlock.querySelector('.generated-envs');
+    const pasteModeSelect = plannerBlock.querySelector('.key-paste-mode');
+    const bulkContainer = plannerBlock.querySelector('.paste-bulk-container');
+    const individualContainer = plannerBlock.querySelector('.paste-individual-container');
+
+    const renderIndividualFields = (names, keys) => {
+      individualContainer.innerHTML = '';
+      if (names.length === 0) {
+        individualContainer.innerHTML = '<span style="font-size:12px; color:var(--muted);">No keys planned.</span>';
+        return;
+      }
+      names.forEach((name, i) => {
+        const val = keys[i] || '';
+        individualContainer.innerHTML += \`
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 11px; font-weight: 600; font-family: monospace; color: var(--muted); width: 110px; overflow: hidden; text-overflow: ellipsis;" title="\${name}">\${name}</span>
+            <input type="text" class="individual-key-input" data-index="\${i}" value="\${escapeAttr(val)}" placeholder="Paste key..." style="flex: 1; padding: 8px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line); background: #fff;" />
+          </div>
+        \`;
+      });
+      individualContainer.querySelectorAll('.individual-key-input').forEach(input => {
+        input.addEventListener('input', updatePlanFromIndividual);
+      });
+    };
+
+    const updatePlanFromIndividual = () => {
+      const inputs = individualContainer.querySelectorAll('.individual-key-input');
+      const keys = Array.from(inputs).map(i => i.value.trim());
+      pastedInput.value = keys.filter(Boolean).join('\\n');
+      
+      const count = Math.max(0, parseInt(countInput.value) || 0);
+      const prefix = prefixInput.value.trim().toUpperCase().replace(/[^A-Z0-9_]+/g, '_') || 'API_KEY';
+      const names = generateEnvNamesList(prefix, count);
+      
+      state.providerPlans.set(providerId, {
+        count: count,
+        envPrefix: prefix,
+        envNames: names,
+        pastedKeys: keys.filter(Boolean)
+      });
+    };
 
     const updatePlan = () => {
       const count = Math.max(0, parseInt(countInput.value) || 0);
@@ -258,19 +307,41 @@ function renderProviderPlanners() {
       const names = generateEnvNamesList(prefix, count);
       
       if (count === 0) {
-        envsPre.textContent = '(0 keys planned. Safe for local keyless endpoints like Ollama/LM Studio)';
+        envsPre.textContent = '(0 keys planned. Safe for local keyless endpoints)';
       } else {
-        envsPre.textContent = names.join('\n');
+        envsPre.textContent = names.join('\\n');
       }
+      
+      const keys = pastedInput.value.split('\\n').map(x => x.trim()).filter(Boolean);
       
       state.providerPlans.set(providerId, {
         count: count,
         envPrefix: prefix,
         envNames: names,
-        pastedKeys: pastedInput.value.split('\n').map(x => x.trim()).filter(Boolean)
+        pastedKeys: keys
       });
+      
+      if (pasteModeSelect.value === 'individual') {
+        renderIndividualFields(names, keys);
+      }
       updateDashboard();
     };
+
+    pasteModeSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'bulk') {
+        bulkContainer.style.display = 'flex';
+        individualContainer.style.display = 'none';
+      } else {
+        bulkContainer.style.display = 'none';
+        individualContainer.style.display = 'flex';
+        
+        const count = Math.max(0, parseInt(countInput.value) || 0);
+        const prefix = prefixInput.value.trim().toUpperCase().replace(/[^A-Z0-9_]+/g, '_') || 'API_KEY';
+        const names = generateEnvNamesList(prefix, count);
+        const keys = pastedInput.value.split('\\n').map(x => x.trim()).filter(Boolean);
+        renderIndividualFields(names, keys);
+      }
+    });
 
     countInput.addEventListener('input', updatePlan);
     prefixInput.addEventListener('input', updatePlan);
