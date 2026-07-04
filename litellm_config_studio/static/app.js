@@ -91,7 +91,7 @@ function updateDashboard() {
   $('selectedProviderCount').textContent = state.selectedProviderIds.size;
   $('envCount').textContent = Array.from(state.providerPlans.values()).reduce((sum, p) => sum + p.count, 0);
   $('loadedModelCount').textContent = state.models.length;
-  $('selectedModelsSummary').textContent = state.selectedModels.size;
+  $('selectedModelCount').textContent = state.selectedModels.size;
   renderModelFetchers();
   renderProviderRouting();
 }
