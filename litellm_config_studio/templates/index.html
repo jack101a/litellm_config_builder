@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LiteLLM Config Studio</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="logo-area">
+      <div class="logo-icon"></div>
+      <div>
+        <p class="eyebrow">Local-first · No database</p>
+        <h2>LiteLLM Config Studio</h2>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="status-pill">localhost safe mode</div>
+      <button id="compatButton" class="secondary">Compatibility</button>
+    </div>
+  </header>
+
+  <nav class="stepper" id="stepperNav">
+    <div class="step-item active" data-target="dashboard"><span>Overview</span></div>
+    <div class="step-item" data-target="providers"><span>1. Providers</span></div>
+    <div class="step-item" data-target="keys"><span>2. Keys</span></div>
+    <div class="step-item" data-target="models"><span>3. Models</span></div>
+    <div class="step-item" data-target="routing"><span>4. Routing</span></div>
+    <div class="step-item" data-target="tests"><span>5. Test Center</span></div>
+    <div class="step-item" data-target="output"><span>6. Output</span></div>
+    <div class="step-item" data-target="import"><span>Import/Lint</span></div>
+  </nav>
+
+  <main class="wizard-container">
+    
+    <section id="dashboard" class="panel section active">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Product workflow</p>
+          <h1>Build configs without YAML pain</h1>
+          <p>Complete the setup steps. You can review and edit the final files manually before copying or downloading them.</p>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><strong id="selectedProviderCount">0</strong><span>providers selected</span></div>
+        <div class="stat"><strong id="envCount">5</strong><span>env keys planned</span></div>
+        <div class="stat"><strong id="loadedModelCount">0</strong><span>models loaded</span></div>
+        <div class="stat"><strong id="selectedModelCount">0</strong><span>models selected</span></div>
+      </div>
+      <div class="split">
+        <div class="info-card">
+          <h3>Recommended flow</h3>
+          <ol>
+            <li>Select providers (e.g., NVIDIA, OpenAI) and plan API keys.</li>
+            <li>Fetch models directly from providers and enrich metadata.</li>
+            <li>Choose <strong>Hybrid mode</strong>: explicit aliases for production, wildcard for experiments.</li>
+            <li>Enable retries, cooldowns, and health routing.</li>
+            <li>Run cheap local smoke tests before deployment.</li>
+          </ol>
+        </div>
+        <div class="info-card">
+          <h3>Security & Safety</h3>
+          <ul>
+            <li>Generated configs use secure <code>os.environ/KEY_NAME</code>.</li>
+            <li>Pasted keys are strictly for in-browser live tests.</li>
+            <li>LAN mode is disabled by default.</li>
+            <li>All generation happens locally on this machine.</li>
+          </ul>
+        </div>
+      </div>
+      <pre id="compatReport" class="code small hidden"></pre>
+      <div class="button-row justify-between">
+        <div></div>
+        <button class="primary wizard-next" data-next="providers">Start: Choose Providers</button>
+      </div>
+    </section>
+
+    <section id="providers" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Step 1</p>
+          <h1>Select AI Providers</h1>
+          <p>Choose which APIs you want to connect. We will fetch and load balance their models in the next steps.</p>
+        </div>
+        <button id="refreshProviders" class="secondary">Refresh list</button>
+      </div>
+      <div id="providerGrid" class="provider-grid"></div>
+      <div class="button-row justify-between">
+        <button class="ghost wizard-prev" data-prev="dashboard">Back</button>
+        <button class="primary wizard-next" data-next="keys">Continue to Keys</button>
+      </div>
+    </section>
+
+    <section id="keys" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Step 2</p>
+          <h1>API Key Planner</h1>
+          <p>Specify how many keys you have for each provider. The final YAML will map these as system environment variables automatically.</p>
+        </div>
+      </div>
+
+      <div id="providerPlannersContainer">
+        <!-- Dynamically populated -->
+      </div>
+      <div class="button-row justify-between">
+        <button class="ghost wizard-prev" data-prev="providers">Back</button>
+        <button class="primary wizard-next" data-next="models">Continue to Models</button>
+      </div>
+    </section>
+
+    <section id="models" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Step 3</p>
+          <h1>Fetch & Select Models</h1>
+          <p>Fetch available endpoints from the providers. Select the specific models you wish to expose explicitly.</p>
+        </div>
+      </div>
+      <div id="providerFetchersContainer" style="margin-bottom: 24px;">
+        <!-- Dynamically populated -->
+      </div>
+      <div class="button-row">
+        <button id="bulkEnrich" class="primary">Enrich Selected NVIDIA Models</button>
+        <button id="addManualModel" class="secondary">Add manual model</button>
+        <button id="selectVisible" class="secondary">Select visible</button>
+        <button id="clearSelection" class="ghost">Clear selection</button>
+        <button id="clearModels" class="ghost">Clear all fetched</button>
+      </div>
+      <div class="filters">
+        <input id="modelSearch" type="text" placeholder="Search by name, ID, or capability..." style="flex:1;" />
+        <label class="checkbox-row"><input id="filterReasoning" type="checkbox" /> Reasoning</label>
+        <label class="checkbox-row"><input id="filterTools" type="checkbox" /> Tools</label>
+        <label class="checkbox-row"><input id="filterVision" type="checkbox" /> Vision</label>
+        <label class="checkbox-row"><input id="filterDeprecated" type="checkbox" checked /> Hide deprecated</label>
+      </div>
+      <div id="selectedSummary" class="selected-summary"></div>
+      <div id="modelsTable" class="models-table"></div>
+      <div class="button-row justify-between">
+        <button class="ghost wizard-prev" data-prev="keys">Back</button>
+        <button class="primary wizard-next" data-next="routing">Continue to Routing</button>
+      </div>
+    </section>
+
+    <section id="routing" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Step 4</p>
+          <h1>Traffic Routing & Resilience</h1>
+          <p>Configure how requests should be balanced across your API keys, along with fallback logic for downtime.</p>
+        </div>
+      </div>
+      <div class="form-grid">
+        <label>Generation mode
+          <select id="generationMode">
+            <option value="explicit">Explicit only (Max visibility)</option>
+            <option value="wildcard">Wildcard only (Minimal config)</option>
+            <option value="hybrid" selected>Hybrid (Explicit + Wildcards)</option>
+          </select>
+        </label>
+        <label>Routing strategy
+          <select id="routingStrategy">
+            <option value="simple-shuffle">Simple Shuffle (Recommended)</option>
+            <option value="usage-based-routing">Usage-based (Rate limits)</option>
+            <option value="latency-based-routing">Latency-based</option>
+            <option value="least-busy">Least busy</option>
+            <option value="lowest-cost">Lowest cost</option>
+          </select>
+        </label>
+        <div id="providerRoutingContainer" style="grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 12px 0;"></div>
+        <label>Max Retries
+          <input id="numRetries" type="number" min="0" max="20" value="2" />
+        </label>
+        <label>Cooldown duration (sec)
+          <input id="cooldownTime" type="number" min="0" max="3600" value="60" />
+        </label>
+        <label>Global Timeout (sec)
+          <input id="timeout" type="number" min="1" max="3600" placeholder="Optional" />
+        </label>
+        <label>Max parallel requests
+          <input id="maxParallel" type="number" min="1" placeholder="Optional" />
+        </label>
+        <label>Prompt-cache mode
+          <select id="promptCacheMode">
+            <option value="off">Disabled</option>
+            <option value="advisory">Advisory note</option>
+            <option value="sticky">Sticky/cache-friendly note</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex; gap:20px; margin-bottom: 24px;">
+        <label class="checkbox-row" style="padding-top:0;"><input id="backgroundHealth" type="checkbox" checked /> Background health checks</label>
+        <label class="checkbox-row" style="padding-top:0;"><input id="healthRouting" type="checkbox" checked /> Health-check routing</label>
+      </div>
+      
+      <div class="notice info">Hybrid mode automatically generates explicit aliases for selected models and broad wildcard routes for experimental ones.</div>
+      
+      <h3 style="margin-top:24px;">Fallback Logic</h3>
+      <p class="subtitle">If the primary model fails, try these instead. (Format: <code>primary: fallback-one, fallback-two</code>)</p>
+      <textarea id="fallbackText" class="textarea" rows="4" placeholder="qwen3.5-397b: glm-5.2, gemini-flash"></textarea>
+      
+      <div class="button-row justify-between">
+        <button class="ghost wizard-prev" data-prev="models">Back</button>
+        <button class="primary wizard-next" data-next="tests">Continue to Testing</button>
+      </div>
+    </section>
+
+    <section id="tests" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Step 5</p>
+          <h1>Test Center</h1>
+          <p>Execute live smoke tests to verify connectivity before outputting the production YAML.</p>
+        </div>
+        <button id="estimateTests" class="secondary">Estimate API calls</button>
+      </div>
+      <div class="notice warn">These tests hit live provider APIs. Please ensure you've pasted valid keys in Step 2.</div>
+      
+      <div class="form-grid" style="margin-bottom: 24px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid var(--line);">
+        <label>Target Provider
+          <select id="testProviderSelect"></select>
+        </label>
+        <label>Target Model
+          <select id="testModelSelect"></select>
+        </label>
+      </div>
+      
+      <div class="button-row">
+        <button id="testKey" class="primary">Test authentication</button>
+        <button id="testChat" class="primary">Test chat completion</button>
+        <button id="testMatrix" class="secondary">Run Matrix Chat Test</button>
+      </div>
+      <div id="testResults" style="margin-top: 16px; min-height: 100px; padding: 12px; background: #fff; border: 1px solid var(--line); border-radius: 4px; overflow-x: auto; font-family: monospace; font-size: 13px;"></div>
+      
+      <div class="button-row justify-between">
+        <button class="ghost wizard-prev" data-prev="routing">Back</button>
+        <button class="primary wizard-next" data-next="output">Continue to Output</button>
+      </div>
+    </section>
+
+    <section id="output" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Step 6</p>
+          <h1>Deployment Files</h1>
+          <p>Your LiteLLM configuration is ready. Review, validate, and download.</p>
+        </div>
+        <div class="button-row right no-margin">
+          <button id="generateOutput" class="primary">Generate Output</button>
+          <button id="downloadZip" class="secondary">Download ZIP</button>
+        </div>
+      </div>
+      
+      <div class="tabs" id="outputTabs"></div>
+      
+      <div class="editor-toolbar">
+        <button id="copyCurrent" class="secondary">Copy to clipboard</button>
+        <button id="downloadCurrent" class="secondary">Download file</button>
+        <button id="validateCurrent" class="secondary">Lint YAML</button>
+      </div>
+      <textarea id="outputEditor" class="code-editor" spellcheck="false"></textarea>
+      <pre id="outputLint" class="code small"></pre>
+      
+      <div class="button-row justify-between">
+        <button class="ghost wizard-prev" data-prev="tests">Back</button>
+        <div></div>
+      </div>
+    </section>
+
+    <section id="import" class="panel section">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Utilities</p>
+          <h1>Import & Lint config.yaml</h1>
+          <p>Paste an existing LiteLLM config here to identify duplicates, vulnerabilities, or missing optimizations.</p>
+        </div>
+      </div>
+      <textarea id="existingConfig" class="code-editor" spellcheck="false" placeholder="Paste existing config.yaml here..."></textarea>
+      <div class="button-row">
+        <button id="analyzeConfig" class="primary">Analyze Config</button>
+      </div>
+      <pre id="analysisResults" class="code"></pre>
+    </section>
+
+  </main>
+
+  <!-- Modal for manual additions -->
+  <template id="manualModelTemplate">
+    <div class="modal-backdrop">
+      <div class="modal">
+        <h3>Add Manual Model</h3>
+        <p class="subtitle" style="margin-bottom: 20px;">For unlisted or custom-hosted endpoints.</p>
+        <div class="form-grid one">
+          <label>Provider ID <input id="manualProvider" value="nvidia" /></label>
+          <label>Model ID <input id="manualModelId" placeholder="z-ai/glm-5.2" /></label>
+          <label>LiteLLM Mapping <input id="manualLiteLLM" placeholder="openai/z-ai/glm-5.2" /></label>
+          <label>API Base URL <input id="manualApiBase" placeholder="https://integrate.api.nvidia.com/v1" /></label>
+        </div>
+        <div class="button-row right" style="margin-top: 24px;">
+          <button class="ghost" id="cancelManual">Cancel</button>
+          <button class="primary" id="saveManual">Save Model</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

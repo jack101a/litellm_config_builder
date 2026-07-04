@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "litellm-config-studio"
+version = "0.2.0"
+description = "Local-first LiteLLM config generator, tester, and model metadata studio."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "LiteLLM Config Studio contributors"}]
+dependencies = [
+  "fastapi>=0.111.0",
+  "uvicorn>=0.30.0",
+  "jinja2>=3.1.4",
+  "httpx>=0.27.0",
+  "PyYAML>=6.0.1",
+  "pydantic>=2.7.0",
+  "beautifulsoup4>=4.12.3",
+  "python-multipart>=0.0.9"
+]
+
+[project.scripts]
+litellm-config-studio = "litellm_config_studio.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["litellm_config_studio*"]
+
+[tool.setuptools.package-data]
+litellm_config_studio = ["templates/*.html", "static/*"]
