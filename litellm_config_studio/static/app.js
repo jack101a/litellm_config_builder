@@ -176,33 +176,75 @@ function renderProviderPlanners() {
     const plan = state.providerPlans.get(providerId);
 
     const plannerBlock = document.createElement('div');
-    plannerBlock.className = 'panel';
-    plannerBlock.style.borderLeft = '4px solid var(--brand)';
-    plannerBlock.style.padding = '18px';
-    plannerBlock.style.marginBottom = '20px';
-    plannerBlock.style.background = '#ffffff';
+    plannerBlock.style.padding = '24px';
+    plannerBlock.style.marginBottom = '28px';
+    plannerBlock.style.background = 'linear-gradient(145deg, #ffffff, #f8fafc)';
+    plannerBlock.style.boxShadow = 'var(--shadow-md)';
+    plannerBlock.style.borderRadius = '16px';
+    plannerBlock.style.position = 'relative';
+    plannerBlock.style.overflow = 'hidden';
+    plannerBlock.style.border = '1px solid var(--line)';
+    plannerBlock.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+    plannerBlock.style.transform = 'translateY(0)';
 
-    plannerBlock.innerHTML = `
-      <h3 style="margin-bottom: 12px; font-size: 18px; color: var(--brand-2);">${escapeHtml(pInfo.display_name)} Key Planner</h3>
-      <div class="form-grid" style="margin-bottom: 16px;">
-        <label>Number of keys
-          <input type="number" class="key-count-input" data-provider="${providerId}" min="0" max="200" value="${plan.count}" />
-        </label>
-        <label>Env prefix
-          <input class="env-prefix-input" data-provider="${providerId}" value="${escapeAttr(plan.envPrefix)}" />
-        </label>
+    // Glow top border
+    const accent = document.createElement('div');
+    accent.style.position = 'absolute';
+    accent.style.top = '0';
+    accent.style.left = '0';
+    accent.style.width = '100%';
+    accent.style.height = '4px';
+    accent.style.background = 'linear-gradient(90deg, var(--brand), #8b5cf6, #ec4899)';
+    plannerBlock.appendChild(accent);
+
+    const innerDiv = document.createElement('div');
+    innerDiv.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; margin-top: 6px;">
+        <h3 style="margin: 0; font-size: 20px; color: var(--text); display: flex; align-items: center; gap: 10px;">
+          <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 10px var(--ok);"></span>
+          ${escapeHtml(pInfo.display_name)} Key Planner
+        </h3>
+        <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand); background: var(--brand-soft); padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(79, 70, 229, 0.1);">Provider Auth</span>
       </div>
-      <div class="split">
-        <div>
-          <h4>Generated environment variables</h4>
-          <pre class="code small generated-envs" id="envs-${providerId}" style="min-height: 80px; max-height: 120px; overflow-y: auto;">${plan.envNames.join('\n')}</pre>
+
+      <div class="form-grid" style="margin-bottom: 28px; gap: 24px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; position: relative;">
+          <label style="color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Number of keys</label>
+          <input type="number" class="key-count-input" data-provider="${providerId}" min="0" max="200" value="${plan.count}" style="font-size: 15px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); transition: all 0.2s;" />
         </div>
-        <div>
-          <h4>Optional: Paste real keys for testing</h4>
-          <textarea class="textarea pasted-keys-input" data-provider="${providerId}" rows="3" placeholder="One real key per line (never written to file)">${plan.pastedKeys.join('\n')}</textarea>
+        <div style="display: flex; flex-direction: column; gap: 8px; position: relative;">
+          <label style="color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;">Environment Prefix</label>
+          <input class="env-prefix-input" data-provider="${providerId}" value="${escapeAttr(plan.envPrefix)}" style="font-size: 15px; padding: 14px 16px; border-radius: 12px; background: rgba(255,255,255,0.9); backdrop-filter: blur(8px); box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); transition: all 0.2s;" />
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 16px;">
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; position: relative;">
+          <h4 style="margin: 0 0 16px 0; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Generated Variables
+          </h4>
+          <pre class="code small generated-envs" id="envs-${providerId}" style="margin: 0; padding: 14px; min-height: 84px; max-height: 124px; overflow-y: auto; background: #0f172a; color: #a5b4fc; border-radius: 8px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.4); font-size: 13px; line-height: 1.6;">${plan.envNames.join('\n')}</pre>
+        </div>
+        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px;">
+          <h4 style="margin: 0 0 16px 0; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            Live Testing Keys
+          </h4>
+          <textarea class="textarea pasted-keys-input" data-provider="${providerId}" rows="3" placeholder="Paste real keys here for live smoke tests (one per line). These are NEVER saved to file." style="margin: 0; width: 100%; font-size: 13px; padding: 14px; border-radius: 8px; border: 1px solid var(--line); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); resize: none;">${plan.pastedKeys.join('\n')}</textarea>
         </div>
       </div>
     `;
+    plannerBlock.appendChild(innerDiv);
+
+    plannerBlock.addEventListener('mouseenter', () => {
+      plannerBlock.style.transform = 'translateY(-4px)';
+      plannerBlock.style.boxShadow = 'var(--shadow-lg)';
+    });
+    plannerBlock.addEventListener('mouseleave', () => {
+      plannerBlock.style.transform = 'translateY(0)';
+      plannerBlock.style.boxShadow = 'var(--shadow-md)';
+    });
 
     // Live update env names on changes
     const countInput = plannerBlock.querySelector('.key-count-input');
