@@ -272,12 +272,12 @@ function renderProviderPlanners() {
       }
       names.forEach((name, i) => {
         const val = keys[i] || '';
-        individualContainer.innerHTML += \`
+        individualContainer.innerHTML += `
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 11px; font-weight: 600; font-family: monospace; color: var(--muted); width: 110px; overflow: hidden; text-overflow: ellipsis;" title="\${name}">\${name}</span>
-            <input type="text" class="individual-key-input" data-index="\${i}" value="\${escapeAttr(val)}" placeholder="Paste key..." style="flex: 1; padding: 8px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line); background: #fff;" />
+            <span style="font-size: 11px; font-weight: 600; font-family: monospace; color: var(--muted); width: 110px; overflow: hidden; text-overflow: ellipsis;" title="${name}">${name}</span>
+            <input type="text" class="individual-key-input" data-index="${i}" value="${escapeAttr(val)}" placeholder="Paste key..." style="flex: 1; padding: 8px 12px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line); background: #fff;" />
           </div>
-        \`;
+        `;
       });
       individualContainer.querySelectorAll('.individual-key-input').forEach(input => {
         input.addEventListener('input', updatePlanFromIndividual);
@@ -287,7 +287,7 @@ function renderProviderPlanners() {
     const updatePlanFromIndividual = () => {
       const inputs = individualContainer.querySelectorAll('.individual-key-input');
       const keys = Array.from(inputs).map(i => i.value.trim());
-      pastedInput.value = keys.filter(Boolean).join('\\n');
+      pastedInput.value = keys.filter(Boolean).join('\n');
       
       const count = Math.max(0, parseInt(countInput.value) || 0);
       const prefix = prefixInput.value.trim().toUpperCase().replace(/[^A-Z0-9_]+/g, '_') || 'API_KEY';
@@ -309,10 +309,10 @@ function renderProviderPlanners() {
       if (count === 0) {
         envsPre.textContent = '(0 keys planned. Safe for local keyless endpoints)';
       } else {
-        envsPre.textContent = names.join('\\n');
+        envsPre.textContent = names.join('\n');
       }
       
-      const keys = pastedInput.value.split('\\n').map(x => x.trim()).filter(Boolean);
+      const keys = pastedInput.value.split('\n').map(x => x.trim()).filter(Boolean);
       
       state.providerPlans.set(providerId, {
         count: count,
@@ -338,7 +338,7 @@ function renderProviderPlanners() {
         const count = Math.max(0, parseInt(countInput.value) || 0);
         const prefix = prefixInput.value.trim().toUpperCase().replace(/[^A-Z0-9_]+/g, '_') || 'API_KEY';
         const names = generateEnvNamesList(prefix, count);
-        const keys = pastedInput.value.split('\\n').map(x => x.trim()).filter(Boolean);
+        const keys = pastedInput.value.split('\n').map(x => x.trim()).filter(Boolean);
         renderIndividualFields(names, keys);
       }
     });
